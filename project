@@ -1,0 +1,171 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+path = '/kaggle/input/home-loan-approval'
+testData = pd.read_csv(f"{path}/loan_sanction_test.csv") 
+trainData = pd.read_csv(f"{path}/loan_sanction_train.csv") 
+
+trainData.head()
+trainData.info()
+
+################################# 1 - LOAN FOR LOOP
+print("\n LOAN LOOP")
+
+approvedLoans = 0
+deniedLoans = 0
+pendingLoans = 0
+loanCount = 0
+
+for index, row in trainData.iterrows():
+    loanCount += 1
+    if row['Loan_Status'] == 'Y':
+        approvedLoans += 1
+    elif row['Loan_Status'] == 'N':
+        deniedLoans += 1
+    else:
+        pendingLoans += 1
+
+print(f"Number of approved loans: {approvedLoans}")
+print(f"Number of denied loans: {deniedLoans}")
+print(f"Number of loans pending: {pendingLoans}")
+print(f"Total Number of Applications: {loanCount}")
+
+################################# 2 - INCOME SORTING 
+print("\n INCOME SORTING")
+
+lowIncome = 4000
+mediumIncome = 6500
+highIncome = 9000
+
+lowIncomeApplicants = trainData[trainData['ApplicantIncome'] < lowIncome]
+mediumIncomeApplicants = trainData[(trainData['ApplicantIncome'] >= lowIncome) & (trainData['ApplicantIncome'] <= mediumIncome)]
+highIncomeApplicants = trainData[trainData['ApplicantIncome'] >= highIncome]
+
+lowIncomeCount = len(lowIncomeApplicants)
+mediumIncomeCount = len(mediumIncomeApplicants)
+highIncomeCount = len(highIncomeApplicants)
+
+maxApplicantIncome = trainData['ApplicantIncome'].max()
+averageApplicantIncome = trainData['ApplicantIncome'].mean()
+minApplicantIncome = trainData['ApplicantIncome'].min()
+
+print(f"Highest Applicant Income: {maxApplicantIncome}")
+print(f"Average Applicant Income: {averageApplicantIncome}")
+print(f"Lowest Applicant Income: {minApplicantIncome}")
+
+print(f"Number of Low Income applicants (Less than 4000): {lowIncomeCount}")
+print(f"Number of Medium Income applicants (More than 4000, Less than 6500): {mediumIncomeCount}")
+print(f"Number of High Income applicants (More than 6500): {highIncomeCount}")
+
+################################### 3-  HOUSEHOLD INCOME CALUCATIONS
+print("\n HOUSEHOLD INCOME CALUCATIONS")
+
+trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['CoapplicantIncome']
+print("First 5 rows of incomes")
+print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'HouseholdIncome']].head())
+
+maxHouseholdIncome = trainData['HouseholdIncome'].max()
+averageHouseholdIncome = trainData['HouseholdIncome'].mean()
+minHouseholdIncome = trainData['HouseholdIncome'].min()
+
+print(f"Highest Household Income: {maxHouseholdIncome}")
+print(f"Average Household Income: {averageHouseholdIncome}")
+print(f"Lowest Household Income: {minHouseholdIncome}")
+
+
+
+#################################### 4 - HOUSEHOLD INCOME COUNTS
+print("\n HOUSEHOLD INCOME COUNTS")
+
+lowHouseholdIncome = 8000
+mediumHouseholdIncome = 18000
+
+lowHouseholdIncomeApplicants = trainData[trainData['HouseholdIncome'] <= lowHouseholdIncome]
+mediumHouseholdIncomeApplicants = trainData[(trainData['HouseholdIncome'] > lowHouseholdIncome) & (trainData['HouseholdIncome'] <= mediumHouseholdIncome)]
+highHouseholdIncomeApplicants = trainData[trainData['HouseholdIncome'] > mediumHouseholdIncome]
+
+lowHouseholdIncomeCount = len(lowHouseholdIncomeApplicants)
+mediumHouseholdIncomeCount = len(mediumHouseholdIncomeApplicants)
+highHouseholdIncomeCount = len(highHouseholdIncomeApplicants)
+
+print("Previous Amount Thresholds Doubled")
+print(f"Number of Low Household Income applicants: {lowHouseholdIncomeCount}")
+print(f"Number of Medium Household Income applicants: {mediumHouseholdIncomeCount}")
+print(f"Number of High Household Income applicants: {highHouseholdIncomeCount}")
+
+#################################### DEPDENTS AND MARRIAGE COUNTS AND AVERAGES 
+print("\n DEPDENTS AND MARRIAGE")
+
+trainData['Dependents'] = trainData['Dependents'].replace('3+', 3).astype(float)
+averageDependents = trainData['Dependents'].mean()
+
+print(f"Average Number of Dependents: {averageDependents:.2f}")
+
+marriedCount = len(trainData[trainData['Married'] == 'Yes'])
+unmarriedCount = len(trainData[trainData['Married'] == 'No'])
+
+totalApplicants = len(trainData)
+
+marriedPercentage = (marriedCount / totalApplicants) * 100
+unmarriedPercentage = (unmarriedCount / totalApplicants) * 100
+
+print(f"Number of Married Applicants: {marriedCount} ({marriedPercentage:.2f}%)")
+print(f"Number of Unmarried Applicants: {unmarriedCount} ({unmarriedPercentage:.2f}%)")
+
+#################################### HOW EDUCATION MAY EFFECT INCOME AND LOAN VALUES
+print("\n EDUCATION STATUS RELATIONSHIPS")
+
+graduateGroup = trainData[trainData['Education'] == 'Graduate']
+nonGraduateGroup = trainData[trainData['Education'] == 'Not Graduate']
+
+averageLoanGraduate = graduateGroup['LoanAmount'].mean()
+averageIncomeGraduate = graduateGroup['ApplicantIncome'].mean()
+
+averageLoanNonGraduate = nonGraduateGroup['LoanAmount'].mean()
+averageIncomeNonGraduate = nonGraduateGroup['ApplicantIncome'].mean()
+
+print("Relationship Between Education and Income:")
+print(f"Average Loan Amount for Graduates: {averageLoanGraduate:.2f}")
+print(f"Average Applicant Income for Graduates: {averageIncomeGraduate:.2f}")
+print(f"Average Loan Amount for Non-Graduates: {averageLoanNonGraduate:.2f}")
+print(f"Average Applicant Income for Non-Graduates: {averageIncomeNonGraduate:.2f}")
+
+#################################### INITAL CLEANING AND LOAN ANONMOLIES
+print("\n CLEANING AND LOAN ANOMOLIES")
+
+trainData['LoanAmount'] = trainData['LoanAmount'] * 1000
+trainData['ApplicantIncome'] = trainData['ApplicantIncome'] * 10
+trainData['CoapplicantIncome'] = trainData['CoapplicantIncome'] * 10
+trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['CoapplicantIncome']
+print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'HouseholdIncome']].head())
+
+
+averageApplicantIncome = trainData['ApplicantIncome'].mean()
+averageHouseholdIncome = trainData['HouseholdIncome'].mean()
+averageLoan = trainData['LoanAmount'].mean()
+
+print(f"\nAverage Loan Amount: {averageLoan}")
+print(f"Average Household Income: {averageHouseholdIncome}")
+print(f"Average Applicant Income: {averageApplicantIncome}")
+
+
+loanAnomalyMultiplier = 5
+anomalousLoanCount = 0  
+
+print("\nApplicants with loan amounts more than 5 times their household income:")
+
+for index, row in trainData.iterrows():
+    if row['LoanAmount'] > loanAnomalyMultiplier * row['HouseholdIncome']:
+        anomalousLoanCount += 1
+        print(f"Applicant ID: {row['Loan_ID']}, Loan Amount: {row['LoanAmount']}, Household Income: {row['HouseholdIncome']}")
+
+
+print(f"Anomalous Loan Count: {anomalousLoanCount}")
+
+
+
+
+
+
