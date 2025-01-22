@@ -236,7 +236,238 @@ print("\n Numpy for Income vs Co Applicant Income ratio")
 trainData['IncomeRatio'] = np.round(trainData['ApplicantIncome'] / trainData['CoapplicantIncome'], 2)
 print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'IncomeRatio']].sample(5))
 
+//
 
+############################# GENDER CLEANING
+print("Gender Cleaning")
+
+genderMissing = trainData['Gender'].isnull().sum()
+print(f"Missing values for Gender: {genderMissing}")
+
+if genderMissing > 0:
+    genderDistrubtion = trainData['Gender'].value_counts(normalize=True)
+    print(f"\nGender Distribution:\n{genderDistrubtion}")
+    
+    malesDistrubtion = int(np.round(genderDistrubtion['Male'] * genderMissing))
+    femalesDistrubtion = genderMissing - malesDistrubtion  
+
+    newMalesDistrubtion = ['Male'] * malesDistrubtion
+    newFemalesDistrubtion = ['Female'] * femalesDistrubtion
+    replacementValues = newMalesDistrubtion + newFemalesDistrubtion
+    
+    np.random.shuffle(replacementValues)
+    trainData.loc[trainData['Gender'].isnull(), 'Gender'] = replacementValues
+    genderMissing = trainData['Gender'].isnull().sum()
+    print(f"\nMissing values in Gender column were filled with {malesDistrubtion} 'Male' and {femalesDistrubtion} 'Female'")
+
+print(f"New Missing values for Gender: {genderMissing}")
+
+############################# MARRIED CLEANING
+print("\n /////////////////")
+print("Gender Cleaning")
+
+marriageMissing = trainData['Married'].isnull().sum()
+print(f"Missing values for Marriage: {marriageMissing}")
+
+if marriageMissing > 0:
+    marriageDistrubtion = trainData['Married'].value_counts(normalize=True)
+    print(f"\nDistribution of Marital Status:\n{marriageDistrubtion}")
+    
+    noDistrubtion = int(np.round(marriageDistrubtion['No'] * marriageMissing))
+    yesDistrubtion = marriageMissing - noDistrubtion  
+
+    newNoDistrubtion = ['No'] * noDistrubtion
+    newYesDistrubtion = ['Yes'] * yesDistrubtion
+    replacementMarriageValues = newNoDistrubtion + newYesDistrubtion
+    
+    np.random.shuffle(replacementMarriageValues)
+    trainData.loc[trainData['Married'].isnull(), 'Married'] = replacementMarriageValues
+    marriageMissing = trainData['Married'].isnull().sum()
+    print(f"\nMissing values in Marriage column were filled with {noDistrubtion} 'No' and {yesDistrubtion} 'Yes'")
+
+print(f"New Missing values for Marriage: {marriageMissing}")
+
+############################# DEPENDANTS CLEANING
+print("\n /////////////////")
+print("Dependants Cleaning")
+
+
+dependentsCount = trainData['Dependents'].value_counts()
+print("\nCount of each option in the 'Dependents' column:")
+print(dependentsCount)
+
+
+missingDependents = trainData['Dependents'].isnull().sum()
+if missingDependents < 1:
+    print(f"\nThere are no missing values in the 'Dependents' column.")
+else:
+    print(f"\nMissing values in 'Dependents' column: {missingDependents}")
+
+
+withKids = trainData[trainData['Dependents'] > 0]
+withoutKids = trainData[trainData['Dependents'] == 0]
+
+
+withKidsCount = withKids.shape[0]
+withoutKidsCount = withoutKids.shape[0]
+totalApplicants = trainData.shape[0]
+
+withKidsPercentage = (withKidsCount / totalApplicants) * 100
+withoutKidsPercentage = (withoutKidsCount / totalApplicants) * 100
+
+
+averageKids = round(withKids['Dependents'].mean())
+
+print(f"\nTotal Applicants: {totalApplicants}")
+print(f"Applicants with Kids: {withKidsCount} ({withKidsPercentage:.2f}%)")
+print(f"Applicants without Kids: {withoutKidsCount} ({withoutKidsPercentage:.2f}%)")
+print(f"\nRounded average number of kids for applicants with kids: {averageKids}")
+
+
+
+def dependantCleaningdistribution(dataframe, missing_count, withoutKidsPercentage, withKidsPercentage, averageKids):
+
+    fillWithoutKids = int(round(missing_count * (withoutKidsPercentage / 100)))
+    fillWithKids = missing_count - fillWithoutKids
+    
+    print(f"\nMissing values distribution:")
+    print(f"Fill {fillWithoutKids} values with 0 (no kids).")
+    print(f"Fill {fillWithKids} values with {averageKids} (average kids).")
+    
+
+    def fillDependents(row):
+        nonlocal fillWithoutKids, fillWithKids  
+        if pd.isnull(row['Dependents']):
+            if fillWithoutKids > 0:
+                fillWithoutKids -= 1
+                return 0
+            elif fillWithKids > 0:
+                fillWithKids -= 1
+                return averageKids
+        return row['Dependents']
+    
+
+    dataframe['Dependents'] = dataframe.apply(fillDependents, axis=1)
+    return dataframe
+
+
+trainData = dependantCleaningdistribution(trainData, missingDependents, withoutKidsPercentage, withKidsPercentage, averageKids)
+
+newMissingDependents = trainData['Dependents'].isnull().sum()
+print(f"\nNew Missing values in 'Dependents': {newMissingDependents}")
+
+updatedDependentsCount = trainData['Dependents'].value_counts()
+print(f"\nUpdated Distribution of Dependents:")
+print(updatedDependentsCount)
+
+
+############################# EDUCATION CLEANING (non applicable)
+print("\n /////////////////")
+print("\nEducation Cleaning")
+
+missingEducation = trainData['Education'].isnull().sum()
+if missingEducation < 1:
+    print(f"\nThere are no missing values in the 'Education' column.")
+else:
+    print(f"\nMissing values in 'Education' column: {missingEducation}")
+
+income_summary_education = trainData.groupby('Education')['ApplicantIncome'].describe()
+
+print("\nIncome Summary Statistics by Education Level")
+print(income_summary_education)
+
+
+############################# SELF EMPLOYED CLEANING (1)
+print("\n /////////////////")
+print("Self Employed Cleaning")
+
+missingEmployed = trainData['Self_Employed'].isnull().sum()
+if missingEmployed < 1:
+    print(f"\nThere are no missing values in the 'Self_Employed' column.")
+else:
+    print(f"\nMissing values in 'Self_Employed' column: {missingEmployed}")
+
+print(f"Income data will be used to clean this section, {missingEmployed} values will be updated based on clean Income data for better accuracy ")
+
+############################# INCOME CLEANING 
+print("\n /////////////////")
+print("Income Cleaning")
+
+missingIncome = trainData['ApplicantIncome'].isnull().sum()
+if missingIncome < 1:
+    print(f"\nThere are no missing values in the 'ApplicantIncome' column.")
+else:
+    print(f"\nMissing values in 'ApplicantIncome' column: {missingIncome}")
+
+Q1 = trainData['ApplicantIncome'].quantile(0.25)
+Q3 = trainData['ApplicantIncome'].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+outliers = trainData[(trainData['ApplicantIncome'] < lower_bound) | (trainData['ApplicantIncome'] > upper_bound)]
+medianIncome = trainData['ApplicantIncome'].median()
+trainData['ApplicantIncome'] = trainData['ApplicantIncome'].apply(lambda x: medianIncome if (x < lower_bound) or (x > upper_bound) else x)
+
+print(f"\nNumber of outliers detected using IQR: {outliers.shape[0]}")
+print("\nIncome Distribution after Outlier Replacement:")
+print(trainData['ApplicantIncome'].describe())
+
+############################# SELF EMPLOYED CLEANING (2)
+print("\n /////////////////")
+print("Self Employed Cleaning")
+
+
+selfEmployedCount = trainData['Self_Employed'].value_counts()
+print(f"\nDistribution of 'Self_Employed' column:")
+print(selfEmployedCount)
+
+print(f"\nCompare Education by Self_Employed columns:")
+compare = trainData.groupby(['Education', 'Self_Employed']).size().unstack(fill_value=0)
+print(compare)
+
+print("\nIncome Distribution by Education and Self-Employed:")
+incomeSummary = trainData.groupby(['Education', 'Self_Employed'])['ApplicantIncome'].describe()
+print(incomeSummary)
+
+def employmentCleaning(row, incomeSummary):
+    education = row['Education']
+    income = row['ApplicantIncome']  
+    statsNo = incomeSummary.loc[(education, 'No')]  # stats for 'Not Self Employed'
+    statsYes = incomeSummary.loc[(education, 'Yes')]  # stats for 'Self Employed'
+
+    if income < statsNo['mean'] and income < statsYes['mean']:
+        return 'No'
+    elif income >= statsYes['mean']:
+        return 'Yes' 
+    else:
+        return 'No'
+
+
+trainData['Self_Employed'] = trainData.apply(
+    lambda row: employmentCleaning(row, incomeSummary) 
+    if pd.isnull(row['Self_Employed']) else row['Self_Employed'], axis=1
+)
+
+selfEmployedCountUpdated = trainData['Self_Employed'].value_counts()
+print(f"\nUpdated Distribution of 'Self_Employed' column after filling missing values:")
+print(selfEmployedCountUpdated)
+
+############################# COAPPLICANT INCOME CLEANING
+print("\n /////////////////")
+print("CoApplicant Income Cleaning")
+
+missingCoIncome = trainData['CoapplicantIncome'].isnull().sum()
+if missingCoIncome < 1:
+    print(f"\nThere are no missing values in the 'CoapplicantIncome' column.")
+else:
+    print(f"\nMissing values in 'CoapplicantIncome' column: {missingCoIncome}")
+
+
+
+
+ 
 
 
 
