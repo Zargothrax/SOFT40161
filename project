@@ -164,6 +164,79 @@ for index, row in trainData.iterrows():
 
 print(f"Anomalous Loan Count: {anomalousLoanCount}")
 
+// 
+
+######################### Initial Functions 
+
+def cleanTerm(trainData, column='Loan_Amount_Term'):
+    if column not in trainData.columns:
+        raise ValueError(f"Column '{column}' not found in the dataframe.")
+    trainData[column] = trainData[column] / 12
+    return trainData
+
+trainData = cleanTerm(trainData, column='Loan_Amount_Term')
+
+print("5 Random entries of Loan Amount Term (in years):")
+random5 = trainData[['Loan_Amount_Term']].sample(n=5)
+for value in random5['Loan_Amount_Term']:
+    print(f"{value} years")
+    
+#numerical
+def statistics(df, column):
+    average = df[column].mean()
+    median = df[column].median()
+    std_dev = df[column].std()
+    
+    print(f"\nStatistics for {column}:")
+    print(f"Average: {average:.2f}")
+    print(f"Median: {median:.2f}")
+    print(f"Standard Deviation: {std_dev:.2f}")
+    
+    return average, median, std_dev
+
+
+statistics(trainData, 'Dependents')
+statistics(trainData, 'ApplicantIncome')
+statistics(trainData, 'CoapplicantIncome')
+statistics(trainData, 'LoanAmount')
+
+
+#categorical
+def distributionCal(df, column):
+    summary = df[column].value_counts().reset_index()
+    summary.columns = [column, 'Count']
+    summary['Percentage'] = (summary['Count'] / len(df)) * 100
+    summary['Percentage'] = summary['Percentage'].apply(lambda x: f"{x:.2f}%")
+
+    print(f"\nSummary for {column} column:")
+    print(summary)
+    
+    return summary
+
+genderSummary = distributionCal(trainData, 'Gender')
+MarriedSummary = distributionCal(trainData, 'Married')
+EducationSummary = distributionCal(trainData, 'Education')
+
+
+#Numpy to show relationships example
+print("\n Numpy for Income Against Loan")
+
+loanNp = np.array(trainData['LoanAmount'])
+incomeNp = np.array(trainData['HouseholdIncome'])
+
+trainData['LoanIncomeRatio'] = loanNp / incomeNp
+trainData['LoanMoreThanIncome'] = np.where(loanNp > (2 * incomeNp), 1, 0)
+trainData['LoanToIncomePercentage'] = (loanNp / incomeNp) * 100
+trainData['LoanToIncomePercentage'] = trainData['LoanToIncomePercentage'].apply(lambda x: f"{x:.2f}%")
+
+print(trainData[['LoanAmount', 'HouseholdIncome','LoanIncomeRatio', 'LoanMoreThanIncome', 'LoanToIncomePercentage']].head())
+
+print("\n Numpy for Income vs Co Applicant Income ratio")
+
+trainData['IncomeRatio'] = np.round(trainData['ApplicantIncome'] / trainData['CoapplicantIncome'], 2)
+print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'IncomeRatio']].sample(5))
+
+
 
 
 
