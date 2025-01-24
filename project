@@ -605,6 +605,157 @@ areaLoanStats = trainData.groupby('Property_Area')['LoanAmount'].describe()
 print("\nLoan Amount Values:")
 print(areaLoanStats)
 
+############################# GRAPH 1 - MARRIAGE DISTRIBUTION BOX CHART
+print("\n/////////////////")
+print("Graph 1: Marriage Box Plot")
+
+plt.figure(figsize=(8, 6))
+
+sns.countplot(data=trainData, x='Married')
+
+plt.title('Distribution of Marriage Status')
+plt.xlabel('Married Status')
+plt.ylabel('Count')
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.tight_layout()
+plt.show()
+
+############################# GRAPH 2 - LOAN AMOUNT BY LOAN TERM GROUPS
+print("\n/////////////////")
+print("Loan Amount by Loan Term Scatterplot")
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=trainData, x='Loan_Amount_Term', y='LoanAmount', hue='Loan_Status')
+
+plt.title('Relationship between Loan Amount and Loan Term')
+plt.xlabel('Loan Amount (Years)')
+plt.ylabel('Loan Amount')
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.tight_layout()
+plt.show()
+
+############################# GRAPH 3 - HOW DOES EDUCATION AND EMPLOYMENT EFFECT INCOME POINT CHART
+print("\n/////////////////")
+print("Education/Employment effect on Income Point Chart")
+
+plt.figure(figsize=(12, 8))
+
+sns.pointplot(
+    data=trainData, 
+    x='Education', 
+    y='HouseholdIncome', 
+    hue='Self_Employed', 
+    markers='o', 
+    linestyles='-', 
+    dodge=True 
+)
+
+plt.title('Comparison of Household Income by Education and Self-Employment')
+plt.xlabel('Education Level')
+plt.ylabel('Household Income')
+plt.xticks(rotation=20)
+plt.legend(title='Self-Employment')
+plt.tight_layout()
+plt.show()
+
+
+############################# GRAPH 4 - PROPERTY AREA DISTRIBTUION AGAINST INCOME BRACKETS
+print("\n/////////////////")
+print("Property Area Disribution on Income Brackets")
+
+filteredData = trainData[trainData['HouseholdIncome'] <= 200000].copy()
+incomeQuantiles = trainData['HouseholdIncome'].quantile([0.25, 0.5, 0.75])
+
+trainData['IncomeGroup'] = pd.cut(
+    trainData['HouseholdIncome'],
+    bins=[0, incomeQuantiles[0.25], incomeQuantiles[0.5], incomeQuantiles[0.75], trainData['HouseholdIncome'].max()],
+    labels=['Low', 'Medium', 'High', 'Very High'],
+    include_lowest=True
+)
+
+filteredData = trainData.groupby(['Property_Area', 'IncomeGroup']).size().reset_index(name='Count')
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x="Property_Area", 
+    y="Count", 
+    hue="IncomeGroup", 
+    data=filteredData, 
+    palette="Set2"
+)
+
+plt.title("Income Bracket Distribution by Property Area", fontsize=16)
+plt.xlabel("Property Area")
+plt.ylabel("Count of Individuals")
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.legend(title="Income Group")
+
+plt.tight_layout()
+plt.show()
+
+############################# GRAPH 5 - HOUSEHOLD INCOME AGAINST INCOME BY INCOME CLUSTERS (INTERACTABLE)
+print("\n/////////////////")
+print("Household Income Against Loan (Interactable)")
+
+#cleaning data bought over due to error
+filteredData = trainData[trainData['HouseholdIncome'] <= 200000].copy()
+incomeQuantiles = filteredData['HouseholdIncome'].quantile([0.25, 0.5, 0.75])
+filteredData['IncomeGroup'] = pd.cut(
+    filteredData['HouseholdIncome'],
+    bins=[0, incomeQuantiles[0.25], incomeQuantiles[0.5], incomeQuantiles[0.75], filteredData['HouseholdIncome'].max()],
+    labels=['Low', 'Medium', 'High', 'Very High'],
+    include_lowest=True
+)
+
+fig = px.scatter(
+    filteredData,
+    x="HouseholdIncome",
+    y="LoanAmount",
+    color="IncomeGroup",
+    symbol="Loan_Status", 
+    hover_data=["Loan_ID", "Loan_Status", "Gender", "Education", "Self_Employed","Married"], 
+    title="Graph 5: Interactive Scatter Plot of Household Income vs Loan Amount with Approval Status and Income Bracket",
+    labels={
+        "HouseholdIncome": "Household Income",
+        "LoanAmount": "Loan Amount",
+        "IncomeGroup": "Income Group",
+        "Loan_Status": "Loan Approval Status"
+    },
+    symbol_map={"Y": "circle", "N": "x"},  
+)
+
+fig.show()
+
+
+############################# GRAPH 6 - HOUSEHOLD INCOME AGAINST INCOME BY GENDER (INTERACTABLE)
+print("\n/////////////////")
+print("Household Income Against Loan (Interactable) with GENDER")
+
+filteredData = trainData[trainData['HouseholdIncome'] <= 120000].copy()
+fig = px.scatter(
+    filteredData,
+    x="HouseholdIncome",
+    y="LoanAmount",
+    color="Gender",
+    symbol="Loan_Status", 
+    hover_data=["Loan_ID", "Loan_Status", "Gender", "Education", "Self_Employed","Married"], 
+    title="Graph 5: Interactive Scatter Plot of Household Income vs Loan Amount with Approval Status and Gender Distribtution",
+    labels={
+        "HouseholdIncome": "Household Income",
+        "LoanAmount": "Loan Amount",
+        "IncomeGroup": "Income Group",
+        "Loan_Status": "Loan Approval Status"
+    },
+    symbol_map={"Y": "circle", "N": "x"},  
+)
+
+fig.show()
+
+
+
 
 
 
