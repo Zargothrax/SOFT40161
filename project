@@ -1,11 +1,17 @@
+# Libary and Module Imports
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import zscore
+import plotly.express as px
+import tkinter as tk
+from tkinter import messagebox, simpledialog
 
+#File Path (Kaggle + Home)
 path = '/kaggle/input/home-loan-approval'
-testData = pd.read_csv(f"{path}/loan_sanction_test.csv") 
-trainData = pd.read_csv(f"{path}/loan_sanction_train.csv") 
+trainData = pd.read_csv(r"C:\Users\Jamie\Desktop\Project01\loan_sanction_train.csv")
+testData = pd.read_csv(r"C:\Users\Jamie\Desktop\Project01\loan_sanction_test.csv")
 
 trainData.head()
 trainData.info()
@@ -13,11 +19,13 @@ trainData.info()
 ################################# 1 - LOAN FOR LOOP
 print("\n LOAN LOOP")
 
+# Creating Variables and Assigning value of 0 for loop refrencing 
 approvedLoans = 0
 deniedLoans = 0
 pendingLoans = 0
 loanCount = 0
 
+# loop checks against rows and values in Loan Status Collumn, creates a sum based on value found in row and replaces the old variable value
 for index, row in trainData.iterrows():
     loanCount += 1
     if row['Loan_Status'] == 'Y':
@@ -27,6 +35,7 @@ for index, row in trainData.iterrows():
     else:
         pendingLoans += 1
 
+# print new variable values
 print(f"Number of approved loans: {approvedLoans}")
 print(f"Number of denied loans: {deniedLoans}")
 print(f"Number of loans pending: {pendingLoans}")
@@ -35,22 +44,27 @@ print(f"Total Number of Applications: {loanCount}")
 ################################# 2 - INCOME SORTING 
 print("\n INCOME SORTING")
 
+# income thesholds for refrence 
 lowIncome = 4000
 mediumIncome = 6500
 highIncome = 9000
 
+#categorise those with a certain income into of these varaibles based on the thresholds
 lowIncomeApplicants = trainData[trainData['ApplicantIncome'] < lowIncome]
 mediumIncomeApplicants = trainData[(trainData['ApplicantIncome'] >= lowIncome) & (trainData['ApplicantIncome'] <= mediumIncome)]
 highIncomeApplicants = trainData[trainData['ApplicantIncome'] >= highIncome]
 
+#counts how many rows in these new collumns
 lowIncomeCount = len(lowIncomeApplicants)
 mediumIncomeCount = len(mediumIncomeApplicants)
 highIncomeCount = len(highIncomeApplicants)
 
+#calucates the max, average and minimum income values of all applicants 
 maxApplicantIncome = trainData['ApplicantIncome'].max()
 averageApplicantIncome = trainData['ApplicantIncome'].mean()
 minApplicantIncome = trainData['ApplicantIncome'].min()
 
+#variable value printing 
 print(f"Highest Applicant Income: {maxApplicantIncome}")
 print(f"Average Applicant Income: {averageApplicantIncome}")
 print(f"Lowest Applicant Income: {minApplicantIncome}")
@@ -62,6 +76,7 @@ print(f"Number of High Income applicants (More than 6500): {highIncomeCount}")
 ################################### 3-  HOUSEHOLD INCOME CALUCATIONS
 print("\n HOUSEHOLD INCOME CALUCATIONS")
 
+#Creates HouseholdIncome collumn basedof the sum of both income rows. 
 trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['CoapplicantIncome']
 print("First 5 rows of incomes")
 print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'HouseholdIncome']].head())
@@ -86,6 +101,7 @@ lowHouseholdIncomeApplicants = trainData[trainData['HouseholdIncome'] <= lowHous
 mediumHouseholdIncomeApplicants = trainData[(trainData['HouseholdIncome'] > lowHouseholdIncome) & (trainData['HouseholdIncome'] <= mediumHouseholdIncome)]
 highHouseholdIncomeApplicants = trainData[trainData['HouseholdIncome'] > mediumHouseholdIncome]
 
+#creates variables based on the size of the applicants in new threholds. 
 lowHouseholdIncomeCount = len(lowHouseholdIncomeApplicants)
 mediumHouseholdIncomeCount = len(mediumHouseholdIncomeApplicants)
 highHouseholdIncomeCount = len(highHouseholdIncomeApplicants)
@@ -95,9 +111,11 @@ print(f"Number of Low Household Income applicants: {lowHouseholdIncomeCount}")
 print(f"Number of Medium Household Income applicants: {mediumHouseholdIncomeCount}")
 print(f"Number of High Household Income applicants: {highHouseholdIncomeCount}")
 
-#################################### DEPDENTS AND MARRIAGE COUNTS AND AVERAGES 
+#################################### 5 - DEPDENTS AND MARRIAGE COUNTS AND AVERAGES 
 print("\n DEPDENTS AND MARRIAGE")
 
+
+#cleans data slightly by replacing non numerical value of 3+ with numercial value of 3
 trainData['Dependents'] = trainData['Dependents'].replace('3+', 3).astype(float)
 averageDependents = trainData['Dependents'].mean()
 
@@ -114,27 +132,31 @@ unmarriedPercentage = (unmarriedCount / totalApplicants) * 100
 print(f"Number of Married Applicants: {marriedCount} ({marriedPercentage:.2f}%)")
 print(f"Number of Unmarried Applicants: {unmarriedCount} ({unmarriedPercentage:.2f}%)")
 
-#################################### HOW EDUCATION MAY EFFECT INCOME AND LOAN VALUES
+#################################### 6 - HOW EDUCATION MAY EFFECT INCOME AND LOAN VALUES
 print("\n EDUCATION STATUS RELATIONSHIPS")
 
+
+#Creates two groups of applicants based on educational status
 graduateGroup = trainData[trainData['Education'] == 'Graduate']
 nonGraduateGroup = trainData[trainData['Education'] == 'Not Graduate']
 
+#finds the average income of graduates and non graduates
 averageLoanGraduate = graduateGroup['LoanAmount'].mean()
 averageIncomeGraduate = graduateGroup['ApplicantIncome'].mean()
-
 averageLoanNonGraduate = nonGraduateGroup['LoanAmount'].mean()
 averageIncomeNonGraduate = nonGraduateGroup['ApplicantIncome'].mean()
 
+#prints all values to clearly display the difference bwteen these two groups by income 
 print("Relationship Between Education and Income:")
 print(f"Average Loan Amount for Graduates: {averageLoanGraduate:.2f}")
 print(f"Average Applicant Income for Graduates: {averageIncomeGraduate:.2f}")
 print(f"Average Loan Amount for Non-Graduates: {averageLoanNonGraduate:.2f}")
 print(f"Average Applicant Income for Non-Graduates: {averageIncomeNonGraduate:.2f}")
 
-#################################### INITAL CLEANING AND LOAN ANONMOLIES
+#################################### 7 - INITAL CLEANING AND LOAN ANONMOLIES
 print("\n CLEANING AND LOAN ANOMOLIES")
 
+#Sums the data to a more real world appropiate value (e.g Loan amount = 123 is now 123,000 a more realistic loan value)
 trainData['LoanAmount'] = trainData['LoanAmount'] * 1000
 trainData['ApplicantIncome'] = trainData['ApplicantIncome'] * 10
 trainData['CoapplicantIncome'] = trainData['CoapplicantIncome'] * 10
@@ -142,6 +164,7 @@ trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['Coappli
 print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'HouseholdIncome']].head())
 
 
+#Averages calucated and assigned variables 
 averageApplicantIncome = trainData['ApplicantIncome'].mean()
 averageHouseholdIncome = trainData['HouseholdIncome'].mean()
 averageLoan = trainData['LoanAmount'].mean()
@@ -150,12 +173,13 @@ print(f"\nAverage Loan Amount: {averageLoan}")
 print(f"Average Household Income: {averageHouseholdIncome}")
 print(f"Average Applicant Income: {averageApplicantIncome}")
 
-
+#ratio creator to find outliyers with exisiting data 
 loanAnomalyMultiplier = 5
 anomalousLoanCount = 0  
 
 print("\nApplicants with loan amounts more than 5 times their household income:")
 
+#for loop to find any applicants who are requesting a loan more than 5 times their combined income 
 for index, row in trainData.iterrows():
     if row['LoanAmount'] > loanAnomalyMultiplier * row['HouseholdIncome']:
         anomalousLoanCount += 1
@@ -164,24 +188,25 @@ for index, row in trainData.iterrows():
 
 print(f"Anomalous Loan Count: {anomalousLoanCount}")
 
-// 
-
 ######################### Initial Functions 
 
+# first basic function, assigns the loan term to the column variable and cleans it by changing the month value to a yearly value by dividing all term values by 12 (12 months for a year)
 def cleanTerm(trainData, column='Loan_Amount_Term'):
     if column not in trainData.columns:
         raise ValueError(f"Column '{column}' not found in the dataframe.")
     trainData[column] = trainData[column] / 12
     return trainData
 
+
 trainData = cleanTerm(trainData, column='Loan_Amount_Term')
 
+# Function to print 5 random entires using sample
 print("5 Random entries of Loan Amount Term (in years):")
 random5 = trainData[['Loan_Amount_Term']].sample(n=5)
 for value in random5['Loan_Amount_Term']:
     print(f"{value} years")
     
-#numerical
+#numerical function statistics
 def statistics(df, column):
     average = df[column].mean()
     median = df[column].median()
@@ -201,7 +226,7 @@ statistics(trainData, 'CoapplicantIncome')
 statistics(trainData, 'LoanAmount')
 
 
-#categorical
+#categorical function statistics 
 def distributionCal(df, column):
     summary = df[column].value_counts().reset_index()
     summary.columns = [column, 'Count']
@@ -218,7 +243,7 @@ MarriedSummary = distributionCal(trainData, 'Married')
 EducationSummary = distributionCal(trainData, 'Education')
 
 
-#Numpy to show relationships example
+#Numpy to show relationships example uisng arrays with the collumn values, allows for lambda application to print and calcuate percentage weightings of the dataset
 print("\n Numpy for Income Against Loan")
 
 loanNp = np.array(trainData['LoanAmount'])
@@ -236,14 +261,17 @@ print("\n Numpy for Income vs Co Applicant Income ratio")
 trainData['IncomeRatio'] = np.round(trainData['ApplicantIncome'] / trainData['CoapplicantIncome'], 2)
 print(trainData[['ApplicantIncome', 'CoapplicantIncome', 'IncomeRatio']].sample(5))
 
-//
 
 ############################# GENDER CLEANING
+
 print("Gender Cleaning")
 
+#Missing values checked with ISNULL detector and varaible assigned 
 genderMissing = trainData['Gender'].isnull().sum()
 print(f"Missing values for Gender: {genderMissing}")
 
+#for loop, checks if any ISNULL values with previous variable, if it finds any it will calucate the distribution of females and males 
+#Using this distribution calucation the null values will be filled based on the percentage of men to women to ensure fair disparity.
 if genderMissing > 0:
     genderDistrubtion = trainData['Gender'].value_counts(normalize=True)
     print(f"\nGender Distribution:\n{genderDistrubtion}")
@@ -257,35 +285,30 @@ if genderMissing > 0:
     
     np.random.shuffle(replacementValues)
     trainData.loc[trainData['Gender'].isnull(), 'Gender'] = replacementValues
+    
+    #checks again for null values and prints the result 
     genderMissing = trainData['Gender'].isnull().sum()
     print(f"\nMissing values in Gender column were filled with {malesDistrubtion} 'Male' and {femalesDistrubtion} 'Female'")
-
 print(f"New Missing values for Gender: {genderMissing}")
 
 ############################# MARRIED CLEANING
 print("\n /////////////////")
 print("Gender Cleaning")
 
-marriageMissing = trainData['Married'].isnull().sum()
-print(f"Missing values for Marriage: {marriageMissing}")
 
-if marriageMissing > 0:
-    marriageDistrubtion = trainData['Married'].value_counts(normalize=True)
-    print(f"\nDistribution of Marital Status:\n{marriageDistrubtion}")
+missingMarried = trainData['Married'].isnull().sum()
+print(f"Missing values for 'Married': {missingMarried}")
+
+#checks null value marital status and if a coapplicant income is present replaces it with yes. Assuming a coapplicant is a spouse.
+if missingMarried > 0:
+    trainData.loc[(trainData['Married'].isnull()) & (trainData['CoapplicantIncome'] > 0), 'Married'] = 'Yes'
+    trainData.loc[(trainData['Married'].isnull()) & (trainData['CoapplicantIncome'] == 0), 'Married'] = 'No'
     
-    noDistrubtion = int(np.round(marriageDistrubtion['No'] * marriageMissing))
-    yesDistrubtion = marriageMissing - noDistrubtion  
-
-    newNoDistrubtion = ['No'] * noDistrubtion
-    newYesDistrubtion = ['Yes'] * yesDistrubtion
-    replacementMarriageValues = newNoDistrubtion + newYesDistrubtion
+    missingMarried = trainData['Married'].isnull().sum()
+    print(f"\nMissing values in 'Married' column filled based on 'CoapplicantIncome':")
+    print(f"'Yes' for applicants with a co-applicant, 'No' for applicants without.")
     
-    np.random.shuffle(replacementMarriageValues)
-    trainData.loc[trainData['Married'].isnull(), 'Married'] = replacementMarriageValues
-    marriageMissing = trainData['Married'].isnull().sum()
-    print(f"\nMissing values in Marriage column were filled with {noDistrubtion} 'No' and {yesDistrubtion} 'Yes'")
-
-print(f"New Missing values for Marriage: {marriageMissing}")
+print(f"New Missing values for 'Married': {missingMarried}")
 
 ############################# DEPENDANTS CLEANING
 print("\n /////////////////")
@@ -304,17 +327,17 @@ else:
     print(f"\nMissing values in 'Dependents' column: {missingDependents}")
 
 
+# Creates variables and checks to see the average number of kids for applicants with at least 1 dependant
 withKids = trainData[trainData['Dependents'] > 0]
 withoutKids = trainData[trainData['Dependents'] == 0]
-
 
 withKidsCount = withKids.shape[0]
 withoutKidsCount = withoutKids.shape[0]
 totalApplicants = trainData.shape[0]
 
+#uses previous varaibles to calucate percentages 
 withKidsPercentage = (withKidsCount / totalApplicants) * 100
 withoutKidsPercentage = (withoutKidsCount / totalApplicants) * 100
-
 
 averageKids = round(withKids['Dependents'].mean())
 
@@ -323,8 +346,7 @@ print(f"Applicants with Kids: {withKidsCount} ({withKidsPercentage:.2f}%)")
 print(f"Applicants without Kids: {withoutKidsCount} ({withoutKidsPercentage:.2f}%)")
 print(f"\nRounded average number of kids for applicants with kids: {averageKids}")
 
-
-
+#Function to check the general distribution of kids by checking percentages 
 def dependantCleaningdistribution(dataframe, missing_count, withoutKidsPercentage, withKidsPercentage, averageKids):
 
     fillWithoutKids = int(round(missing_count * (withoutKidsPercentage / 100)))
@@ -334,6 +356,7 @@ def dependantCleaningdistribution(dataframe, missing_count, withoutKidsPercentag
     print(f"Fill {fillWithoutKids} values with 0 (no kids).")
     print(f"Fill {fillWithKids} values with {averageKids} (average kids).")
     
+    #subfunction to check for null values and disburtes them based on same distribution weighting from rest of dataset
 
     def fillDependents(row):
         nonlocal fillWithoutKids, fillWithKids  
@@ -346,10 +369,8 @@ def dependantCleaningdistribution(dataframe, missing_count, withoutKidsPercentag
                 return averageKids
         return row['Dependents']
     
-
     dataframe['Dependents'] = dataframe.apply(fillDependents, axis=1)
     return dataframe
-
 
 trainData = dependantCleaningdistribution(trainData, missingDependents, withoutKidsPercentage, withKidsPercentage, averageKids)
 
@@ -365,6 +386,7 @@ print(updatedDependentsCount)
 print("\n /////////////////")
 print("\nEducation Cleaning")
 
+#Checks for missing values and returns 0
 missingEducation = trainData['Education'].isnull().sum()
 if missingEducation < 1:
     print(f"\nThere are no missing values in the 'Education' column.")
@@ -381,6 +403,7 @@ print(income_summary_education)
 print("\n /////////////////")
 print("Self Employed Cleaning")
 
+#Checks for missing values and prints
 missingEmployed = trainData['Self_Employed'].isnull().sum()
 if missingEmployed < 1:
     print(f"\nThere are no missing values in the 'Self_Employed' column.")
@@ -393,23 +416,28 @@ print(f"Income data will be used to clean this section, {missingEmployed} values
 print("\n /////////////////")
 print("Income Cleaning")
 
+
 missingIncome = trainData['ApplicantIncome'].isnull().sum()
 if missingIncome < 1:
     print(f"\nThere are no missing values in the 'ApplicantIncome' column.")
 else:
     print(f"\nMissing values in 'ApplicantIncome' column: {missingIncome}")
 
+#Checks quantiles and groups the top 25% and bottom 25% by income 
 Q1 = trainData['ApplicantIncome'].quantile(0.25)
 Q3 = trainData['ApplicantIncome'].quantile(0.75)
 IQR = Q3 - Q1
 
+#Calucates the average values and creates the sum of which outliyers can be checked against 
 lower_bound = Q1 - 1.5 * IQR
 upper_bound = Q3 + 1.5 * IQR
 
+#checks for outliyers which fall beyond the projected bounds. (applicant with an unlikley income)
 outliers = trainData[(trainData['ApplicantIncome'] < lower_bound) | (trainData['ApplicantIncome'] > upper_bound)]
 medianIncome = trainData['ApplicantIncome'].median()
 trainData['ApplicantIncome'] = trainData['ApplicantIncome'].apply(lambda x: medianIncome if (x < lower_bound) or (x > upper_bound) else x)
 
+#print findings 
 print(f"\nNumber of outliers detected using IQR: {outliers.shape[0]}")
 print("\nIncome Distribution after Outlier Replacement:")
 print(trainData['ApplicantIncome'].describe())
@@ -418,24 +446,27 @@ print(trainData['ApplicantIncome'].describe())
 print("\n /////////////////")
 print("Self Employed Cleaning")
 
-
+#Income now cleaned return to employment status
 selfEmployedCount = trainData['Self_Employed'].value_counts()
 print(f"\nDistribution of 'Self_Employed' column:")
 print(selfEmployedCount)
 
+#Groups Education by Self_Employment to determine influence 
 print(f"\nCompare Education by Self_Employed columns:")
 compare = trainData.groupby(['Education', 'Self_Employed']).size().unstack(fill_value=0)
 print(compare)
 
+#displays info on relatioship
 print("\nIncome Distribution by Education and Self-Employed:")
 incomeSummary = trainData.groupby(['Education', 'Self_Employed'])['ApplicantIncome'].describe()
 print(incomeSummary)
 
+#function to create a grid for income values for both educated and non educated applicants 
 def employmentCleaning(row, incomeSummary):
     education = row['Education']
     income = row['ApplicantIncome']  
-    statsNo = incomeSummary.loc[(education, 'No')]  # stats for 'Not Self Employed'
-    statsYes = incomeSummary.loc[(education, 'Yes')]  # stats for 'Self Employed'
+    statsNo = incomeSummary.loc[(education, 'No')]  
+    statsYes = incomeSummary.loc[(education, 'Yes')] 
 
     if income < statsNo['mean'] and income < statsYes['mean']:
         return 'No'
@@ -458,26 +489,48 @@ print(selfEmployedCountUpdated)
 print("\n /////////////////")
 print("CoApplicant Income Cleaning")
 
+#Is nUll returns 0
 missingCoIncome = trainData['CoapplicantIncome'].isnull().sum()
 if missingCoIncome < 1:
     print(f"\nThere are no missing values in the 'CoapplicantIncome' column.")
 else:
     print(f"\nMissing values in 'CoapplicantIncome' column: {missingCoIncome}")
 
+#zscores introduced with variable
+zScores = zscore(trainData['CoapplicantIncome'])
+
+#use variable to check against unlikely incomes
+outliers = trainData[abs(zScores) > 3]
+outliersCount = outliers.shape[0]
+print(f"Outliers Found using Zscore: {outliersCount}")
+
+#replace outliyers with median vlaue of CoApplicant income
+trainData['CoapplicantIncome'] = trainData.apply(
+    lambda x: trainData['CoapplicantIncome'].median() if abs(zscore([x['CoapplicantIncome']])) > 3 and x['CoapplicantIncome'] != 0 else x['CoapplicantIncome'],
+    axis=1
+)
+
+print("\nIncome Distribution after Outlier Replacement:")
+print(trainData['CoapplicantIncome'].describe())
+
 ############################# LOAN AMOUNT CLEANING
 print("\n /////////////////")
 print("Loan Amount Cleaning")
 
+#Checks for NULL values in collumn
 missingLoan = trainData['LoanAmount'].isnull().sum()
 if missingLoan < 1:
     print(f"\nThere are no missing values in the 'Loan Amount' column.")
 else:
     print(f"\nMissing values in 'Loan Amount' column: {missingLoan}")
 
+#recalucates householdIncome values based on cleaner data 
 trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['CoapplicantIncome']
+#Sums the ratio of Loan Against Householdincome for furher calucation 
 LoanIncomeRatio = (trainData['LoanAmount'] / trainData['HouseholdIncome']).mean()
 print(LoanIncomeRatio)
 
+#creates quantiles for LoanAmount 
 Q1loan = trainData['LoanAmount'].quantile(0.25)
 Q3loan = trainData['LoanAmount'].quantile(0.75)
 IQRloan = Q3loan - Q1loan
@@ -485,6 +538,7 @@ IQRloan = Q3loan - Q1loan
 lowerBoundLoan = Q1loan - 1.5 * IQRloan
 upperBoundLoan = Q3loan + 1.5 * IQRloan
 
+#creates qunatiles for Household Income
 Q1income = trainData['HouseholdIncome'].quantile(0.25)
 Q3income = trainData['HouseholdIncome'].quantile(0.75)
 IQRincome = Q3income - Q1income
@@ -492,13 +546,16 @@ IQRincome = Q3income - Q1income
 lowerBoundIncome = Q1income - 1.5 * IQRincome
 upperBoundIncome = Q3income + 1.5 * IQRincome
 
+#function to check for outliyers against the bounds and if dont fit the expected ratio and replace with median values 
 def LoanCleaning(row, LoanIncomeRatio, lowerBoundLoan, upperBoundLoan, lowerBoundIncome, upperBoundIncome):
     if row['LoanAmount'] < lowerBoundLoan or row['LoanAmount'] > upperBoundLoan:
         row['LoanAmount'] = trainData['LoanAmount'].median()
     return row
 
+
 trainData = trainData.apply(lambda row: LoanCleaning(row, LoanIncomeRatio, lowerBoundLoan, upperBoundLoan, lowerBoundIncome, upperBoundIncome), axis=1)
 
+#replaces null values with the applicants household income * the mean ratio of all other applicants loan amount
 def LoanReplaceNull(row, LoanIncomeRatio):
     if pd.isnull(row['LoanAmount']):
         return row['HouseholdIncome'] * LoanIncomeRatio
@@ -522,24 +579,30 @@ if missingLoanAmountTerm > 0:
 else:
     print(f"\nNo missing values in 'Loan Amount Term' column")
 
+#checks most frequent loan term
 mostCommonTerm = trainData['Loan_Amount_Term'].mode()[0]
 
+#prints each different loan term length (value)
 loanAmountTermCount = trainData['Loan_Amount_Term'].value_counts()
 print(f"\nUpdated distribution of 'Loan Amount Term' column:")
 print(loanAmountTermCount)
 
+#defines short term loans
 shortLoanTerms = trainData[trainData['Loan_Amount_Term'] < 7]
 
 print(f"\nRows where 'Loan_Amount_Term' is under 10 years (less than 120 months):")
 print(shortLoanTerms)
 print(f"Most common Loan_Amount_Term: {mostCommonTerm}")
 
+#Missing values filled with most likely term
 trainData['Loan_Amount_Term'] = trainData['Loan_Amount_Term'].fillna(mostCommonTerm)
 print("\nMissing values filled with the most common loan term.")
 
+#bounds set (monthly)
 lowerBound = 12  
 upperBound = 420
 
+#Outliers detection for unlikely loan periods
 outliers = trainData[(trainData['Loan_Amount_Term'] < lowerBound) | (trainData['Loan_Amount_Term'] > upperBound)]
 print(f"\nOutliers detected:\n{outliers[['Loan_Amount_Term']]}")
 
@@ -558,9 +621,11 @@ print("Credit History Cleaning")
 missingCreditHistory = trainData['Credit_History'].isnull().sum()
 print(f"\nMissing values in 'Credit_History': {missingCreditHistory}")
 
+#creates quantiles for household income
 incomeQuantiles = trainData['HouseholdIncome'].quantile([0.25, 0.5, 0.75])
 print(f"\nHousehold Income Quantiles:\n{incomeQuantiles}")
 
+#creates groups for cluserting the income bands, through bins and labels using the quantitive data
 trainData['IncomeGroup'] = pd.cut(
     trainData['HouseholdIncome'],
     bins=[0, incomeQuantiles[0.25], incomeQuantiles[0.5], incomeQuantiles[0.75], trainData['HouseholdIncome'].max()],
@@ -568,6 +633,7 @@ trainData['IncomeGroup'] = pd.cut(
     include_lowest=True
 )
 
+#checks the likely hood of a credit history based on the education/income group grid and each sections mode result. 
 creditHistoryInfo = trainData.groupby(['Education', 'IncomeGroup'])['Credit_History'].value_counts(normalize=True).unstack(fill_value=0)
 print(f"\nLikelihood of Credit History by Education and Income Group:\n{creditHistoryInfo}")
 
@@ -580,7 +646,6 @@ def CredithistoryChance(row):
             return 1.0 if likelihoods[1.0] > likelihoods[0.0] else 0.0
     else:
         return row['Credit_History']
-
 
 trainData['Credit_History'] = trainData.apply(CredithistoryChance, axis=1)
 trainData.drop(columns=['IncomeGroup'], inplace=True)
@@ -595,12 +660,15 @@ print(f"\nMissing values in 'Credit_History': {missingCreditHistory}")
 print("\n/////////////////")
 print("Property Area Cleaning")
 
+#finds no missings values 
 missingPropertyArea = trainData['Property_Area'].isnull().sum()
 print(f"\nMissing values in 'Property Area': {missingPropertyArea}")
 
+#displays all unquie area a property can be 
 AreaValues = trainData['Property_Area'].unique()
 print(f"\nUnique values in 'Property Area' column: {AreaValues}")
 
+#shows the average loan value for each
 areaLoanStats = trainData.groupby('Property_Area')['LoanAmount'].describe()
 print("\nLoan Amount Values:")
 print(areaLoanStats)
@@ -609,10 +677,13 @@ print(areaLoanStats)
 print("\n/////////////////")
 print("Graph 1: Marriage Box Plot")
 
+#plots a graph, figure = size of x and y axis
 plt.figure(figsize=(8, 6))
 
+#calls cleaned trainDara, assigns x as married collumn 
 sns.countplot(data=trainData, x='Married')
 
+# creates the plot and labels 
 plt.title('Distribution of Marriage Status')
 plt.xlabel('Married Status')
 plt.ylabel('Count')
@@ -625,6 +696,7 @@ plt.show()
 print("\n/////////////////")
 print("Loan Amount by Loan Term Scatterplot")
 
+# Creates a scatterplot to showcase relation ships of three seperate variables
 plt.figure(figsize=(10, 6))
 sns.scatterplot(data=trainData, x='Loan_Amount_Term', y='LoanAmount', hue='Loan_Status')
 
@@ -642,6 +714,7 @@ print("Education/Employment effect on Income Point Chart")
 
 plt.figure(figsize=(12, 8))
 
+# creates a point plot to showcase the differnece in average income against the Self_employed and educated grid, plotting 4 points
 sns.pointplot(
     data=trainData, 
     x='Education', 
@@ -665,9 +738,11 @@ plt.show()
 print("\n/////////////////")
 print("Property Area Disribution on Income Brackets")
 
+#cleans data slightly to produce a more effective graph 
 filteredData = trainData[trainData['HouseholdIncome'] <= 200000].copy()
 incomeQuantiles = trainData['HouseholdIncome'].quantile([0.25, 0.5, 0.75])
 
+#use pandas to sort the data and the household income htroups 
 trainData['IncomeGroup'] = pd.cut(
     trainData['HouseholdIncome'],
     bins=[0, incomeQuantiles[0.25], incomeQuantiles[0.5], incomeQuantiles[0.75], trainData['HouseholdIncome'].max()],
@@ -675,8 +750,10 @@ trainData['IncomeGroup'] = pd.cut(
     include_lowest=True
 )
 
+
 filteredData = trainData.groupby(['Property_Area', 'IncomeGroup']).size().reset_index(name='Count')
 
+#creates a collumn graph to showcase the counts of applicants in each income bracket against the area of their property
 plt.figure(figsize=(10, 6))
 sns.barplot(
     x="Property_Area", 
@@ -710,13 +787,14 @@ filteredData['IncomeGroup'] = pd.cut(
     include_lowest=True
 )
 
+#Scatter plot to compare 4 different variables, using colour and symbol as further visualiastion to showcase clusters in the data
 fig = px.scatter(
     filteredData,
     x="HouseholdIncome",
     y="LoanAmount",
     color="IncomeGroup",
     symbol="Loan_Status", 
-    hover_data=["Loan_ID", "Loan_Status", "Gender", "Education", "Self_Employed","Married"], 
+    hover_data=["Loan_ID", "Loan_Status", "Gender", "Education", "Self_Employed","Married"], #interaction added in form of hover to display info
     title="Graph 5: Interactive Scatter Plot of Household Income vs Loan Amount with Approval Status and Income Bracket",
     labels={
         "HouseholdIncome": "Household Income",
@@ -734,6 +812,7 @@ fig.show()
 print("\n/////////////////")
 print("Household Income Against Loan (Interactable) with GENDER")
 
+#Similar plot but colour changed to showcase gender to show distribution 
 filteredData = trainData[trainData['HouseholdIncome'] <= 120000].copy()
 fig = px.scatter(
     filteredData,
@@ -754,27 +833,33 @@ fig = px.scatter(
 
 fig.show()
 
+
+############################# SECTION 6: GUI DEVLOPMENT
+print("\n/////////////////")
+print("GUI DEVELOPMENT")
+
+#traindata cleaned again
 trainData = trainData[trainData['HouseholdIncome'] <= 200000].copy()
 
-class DataAnalysisGUI:
-    def __init__(self, root):
+#class crreated to house GUI for easy calling 
+class GUI:
+    def __init__(self, root): #function to define root and general menu specs 
         self.root = root
         self.root.title("GUI")
         self.root.geometry("500x550")
-        
         self.button_frame = tk.Frame(self.root)
         self.button_frame.pack(pady=20, fill="x")
         
-        self.main_buttons = {
-            "Data Overview": self.sub("Data Overview", self.summaryButton, self.meanValuesButton),
+        self.mainMenu = { #sets up the main menu and assigns the functions to the buttons 
+            "Data Overview": self.sub("Data Overview", self.summaryButton, self.modeValuesButton),
             "Graphs and Visuals": self.sub("Graphs and Visuals", self.ScatterButton, self.Bar),
             "Show Rows": self.sub("Show Rows", self.rowsDsiplay)
         }
 
         self.mainButtons()
-
+# functions for buttons within the menu 
     def mainButtons(self):
-        for main, submenu in self.main_buttons.items():
+        for main, submenu in self.mainMenu.items():
             button = tk.Button(self.button_frame, text=main, command=lambda submenu=submenu: self.submenus(submenu))
             button.pack(padx=10, pady=10, side="top")
 
@@ -786,7 +871,8 @@ class DataAnalysisGUI:
             button = tk.Button(frame, text=command.__name__.replace("show_", "").replace("_", " ").title(),command=command)
             subButtons.append(button)
         return frame, subButtons
-
+    
+# function to check if a window is open and close if needed, also to display next submenu
     def submenus(self, submenu):
         frame, buttons = submenu
         
@@ -797,13 +883,15 @@ class DataAnalysisGUI:
             for button in buttons:
                 button.pack(padx=10, pady=5, side="top")
 
+#caluactes and pushes a message box with results 
     def summaryButton(self):
         meanIncome = trainData['HouseholdIncome'].mean()
         meanLoan = trainData['LoanAmount'].mean()
         message = f"Average Income: {meanIncome}\nAverage Loan Amount: {meanLoan}"
         messagebox.showinfo("Summary Statistics", message)
 
-    def meanValuesButton(self):
+#calucates and pushes a message box with mode results of a variety of collumns 
+    def modeValuesButton(self):
         commonGender = trainData['Gender'].mode()[0]
         commonApproval = trainData['Loan_Status'].mode()[0]
         commomArea = trainData['Property_Area'].mode()[0]
@@ -813,6 +901,7 @@ class DataAnalysisGUI:
         message = f"Most Common Gender: {commonGender}\nMost Common Loan Status: {commonApproval}\nMost Common Property Area: {commomArea} \nMost Common Educational Status: {commonEducation}\nMost Common Employment Status: {commonEmployed}\nMost Common Credit History Status (1=Yes, 0=No): {commonCredit}"
         messagebox.showinfo("Most Common Values", message)
 
+#function to generate the previously plotted scatterplot
     def ScatterButton(self):
         fig = px.scatter(
             filteredData,
@@ -833,6 +922,7 @@ class DataAnalysisGUI:
 
         fig.show()
 
+#function to create a new bar graph where loan status is compared against gender 
     def Bar(self):
         plt.figure(figsize=(8, 6))
         sns.countplot(data=trainData, x="Loan_Status", hue="Gender")
@@ -841,15 +931,16 @@ class DataAnalysisGUI:
         plt.ylabel("Count")
         plt.show()
 
-
+#function to prompt a simple dialogbox to prompt the user to enter a value, this is assigne to a variable and this x value is called to display x amount of rows from the dataset.
     def rowsDsiplay(self):
         userRowCount = simpledialog.askinteger("Show Rows", "How many rows would you like to display?", minvalue=1, maxvalue=trainData.shape[0])
         if userRowCount:
             displayRows = trainData.head(userRowCount)
             messagebox.showinfo("Selected Rows", displayRows.to_string())
 
+#runs the gui
 root = tk.Tk()
-app = DataAnalysisGUI(root)
+app = GUI(root)
 root.mainloop()
 
 
