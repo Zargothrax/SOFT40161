@@ -754,7 +754,103 @@ fig = px.scatter(
 
 fig.show()
 
+trainData = trainData[trainData['HouseholdIncome'] <= 200000].copy()
 
+class DataAnalysisGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("GUI")
+        self.root.geometry("500x550")
+        
+        self.button_frame = tk.Frame(self.root)
+        self.button_frame.pack(pady=20, fill="x")
+        
+        self.main_buttons = {
+            "Data Overview": self.sub("Data Overview", self.summaryButton, self.meanValuesButton),
+            "Graphs and Visuals": self.sub("Graphs and Visuals", self.ScatterButton, self.Bar),
+            "Show Rows": self.sub("Show Rows", self.rowsDsiplay)
+        }
+
+        self.mainButtons()
+
+    def mainButtons(self):
+        for main, submenu in self.main_buttons.items():
+            button = tk.Button(self.button_frame, text=main, command=lambda submenu=submenu: self.submenus(submenu))
+            button.pack(padx=10, pady=10, side="top")
+
+    def sub(self, category, *commands):
+        frame = tk.Frame(self.root)
+        subButtons = []
+        
+        for command in commands:
+            button = tk.Button(frame, text=command.__name__.replace("show_", "").replace("_", " ").title(),command=command)
+            subButtons.append(button)
+        return frame, subButtons
+
+    def submenus(self, submenu):
+        frame, buttons = submenu
+        
+        if frame.winfo_ismapped():
+            frame.pack_forget()
+        else:
+            frame.pack(padx=10, pady=10, fill="x")
+            for button in buttons:
+                button.pack(padx=10, pady=5, side="top")
+
+    def summaryButton(self):
+        meanIncome = trainData['HouseholdIncome'].mean()
+        meanLoan = trainData['LoanAmount'].mean()
+        message = f"Average Income: {meanIncome}\nAverage Loan Amount: {meanLoan}"
+        messagebox.showinfo("Summary Statistics", message)
+
+    def meanValuesButton(self):
+        commonGender = trainData['Gender'].mode()[0]
+        commonApproval = trainData['Loan_Status'].mode()[0]
+        commomArea = trainData['Property_Area'].mode()[0]
+        commonEducation = trainData['Education'].mode()[0]
+        commonEmployed = trainData['Self_Employed'].mode()[0]
+        commonCredit = trainData['Credit_History'].mode()[0]
+        message = f"Most Common Gender: {commonGender}\nMost Common Loan Status: {commonApproval}\nMost Common Property Area: {commomArea} \nMost Common Educational Status: {commonEducation}\nMost Common Employment Status: {commonEmployed}\nMost Common Credit History Status (1=Yes, 0=No): {commonCredit}"
+        messagebox.showinfo("Most Common Values", message)
+
+    def ScatterButton(self):
+        fig = px.scatter(
+            filteredData,
+            x="HouseholdIncome",
+            y="LoanAmount",
+            color="IncomeGroup",
+            symbol="Loan_Status", 
+            hover_data=["Loan_ID", "Loan_Status", "Gender", "Education", "Self_Employed","Married"], 
+            title="Graph 5: Interactive Scatter Plot of Household Income vs Loan Amount with Approval Status and Income Bracket",
+            labels={
+                "HouseholdIncome": "Household Income",
+                "LoanAmount": "Loan Amount",
+                "IncomeGroup": "Income Group",
+                "Loan_Status": "Loan Approval Status"
+            },
+            symbol_map={"Y": "circle", "N": "x"},  
+        )
+
+        fig.show()
+
+    def Bar(self):
+        plt.figure(figsize=(8, 6))
+        sns.countplot(data=trainData, x="Loan_Status", hue="Gender")
+        plt.title("Loan Status by Gender")
+        plt.xlabel("Loan Status")
+        plt.ylabel("Count")
+        plt.show()
+
+
+    def rowsDsiplay(self):
+        userRowCount = simpledialog.askinteger("Show Rows", "How many rows would you like to display?", minvalue=1, maxvalue=trainData.shape[0])
+        if userRowCount:
+            displayRows = trainData.head(userRowCount)
+            messagebox.showinfo("Selected Rows", displayRows.to_string())
+
+root = tk.Tk()
+app = DataAnalysisGUI(root)
+root.mainloop()
 
 
 
