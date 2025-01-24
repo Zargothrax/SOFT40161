@@ -464,6 +464,147 @@ if missingCoIncome < 1:
 else:
     print(f"\nMissing values in 'CoapplicantIncome' column: {missingCoIncome}")
 
+############################# LOAN AMOUNT CLEANING
+print("\n /////////////////")
+print("Loan Amount Cleaning")
+
+missingLoan = trainData['LoanAmount'].isnull().sum()
+if missingLoan < 1:
+    print(f"\nThere are no missing values in the 'Loan Amount' column.")
+else:
+    print(f"\nMissing values in 'Loan Amount' column: {missingLoan}")
+
+trainData['HouseholdIncome'] = trainData['ApplicantIncome'] + trainData['CoapplicantIncome']
+LoanIncomeRatio = (trainData['LoanAmount'] / trainData['HouseholdIncome']).mean()
+print(LoanIncomeRatio)
+
+Q1loan = trainData['LoanAmount'].quantile(0.25)
+Q3loan = trainData['LoanAmount'].quantile(0.75)
+IQRloan = Q3loan - Q1loan
+
+lowerBoundLoan = Q1loan - 1.5 * IQRloan
+upperBoundLoan = Q3loan + 1.5 * IQRloan
+
+Q1income = trainData['HouseholdIncome'].quantile(0.25)
+Q3income = trainData['HouseholdIncome'].quantile(0.75)
+IQRincome = Q3income - Q1income
+
+lowerBoundIncome = Q1income - 1.5 * IQRincome
+upperBoundIncome = Q3income + 1.5 * IQRincome
+
+def LoanCleaning(row, LoanIncomeRatio, lowerBoundLoan, upperBoundLoan, lowerBoundIncome, upperBoundIncome):
+    if row['LoanAmount'] < lowerBoundLoan or row['LoanAmount'] > upperBoundLoan:
+        row['LoanAmount'] = trainData['LoanAmount'].median()
+    return row
+
+trainData = trainData.apply(lambda row: LoanCleaning(row, LoanIncomeRatio, lowerBoundLoan, upperBoundLoan, lowerBoundIncome, upperBoundIncome), axis=1)
+
+def LoanReplaceNull(row, LoanIncomeRatio):
+    if pd.isnull(row['LoanAmount']):
+        return row['HouseholdIncome'] * LoanIncomeRatio
+    return row['LoanAmount']
+
+trainData['LoanAmount'] = trainData.apply(lambda row: LoanReplaceNull(row, LoanIncomeRatio), axis=1)
+
+print(f"\nUpdated distribution of 'LoanAmount' after filling missing values and cleaning outliers:")
+print(trainData['LoanAmount'].describe())
+
+############################# LOAN TERM CLEANING
+print("\n /////////////////")
+print("Loan Amount Term Cleaning")
+
+LoanTerms = trainData['Loan_Amount_Term'].unique()
+print(f"\nUnique values in 'Loan Amount Term' column: {LoanTerms}")
+
+missingLoanAmountTerm = trainData['Loan_Amount_Term'].isnull().sum()
+if missingLoanAmountTerm > 0:
+    print(f"\nMissing values in 'Loan Amount Term' column: {missingLoanAmountTerm}")
+else:
+    print(f"\nNo missing values in 'Loan Amount Term' column")
+
+mostCommonTerm = trainData['Loan_Amount_Term'].mode()[0]
+
+loanAmountTermCount = trainData['Loan_Amount_Term'].value_counts()
+print(f"\nUpdated distribution of 'Loan Amount Term' column:")
+print(loanAmountTermCount)
+
+shortLoanTerms = trainData[trainData['Loan_Amount_Term'] < 7]
+
+print(f"\nRows where 'Loan_Amount_Term' is under 10 years (less than 120 months):")
+print(shortLoanTerms)
+print(f"Most common Loan_Amount_Term: {mostCommonTerm}")
+
+trainData['Loan_Amount_Term'] = trainData['Loan_Amount_Term'].fillna(mostCommonTerm)
+print("\nMissing values filled with the most common loan term.")
+
+lowerBound = 12  
+upperBound = 420
+
+outliers = trainData[(trainData['Loan_Amount_Term'] < lowerBound) | (trainData['Loan_Amount_Term'] > upperBound)]
+print(f"\nOutliers detected:\n{outliers[['Loan_Amount_Term']]}")
+
+trainData.loc[(trainData['Loan_Amount_Term'] < lowerBound) | 
+              (trainData['Loan_Amount_Term'] > upperBound), 'Loan_Amount_Term'] = mostCommonTerm
+
+print("\nOutliers replaced with the most common loan term.")
+
+print("\nUpdated Loan_Amount_Term distribution:")
+print(trainData['Loan_Amount_Term'].value_counts())
+
+############################# CREDIT HISTORY CLEANING
+print("\n/////////////////")
+print("Credit History Cleaning")
+
+missingCreditHistory = trainData['Credit_History'].isnull().sum()
+print(f"\nMissing values in 'Credit_History': {missingCreditHistory}")
+
+incomeQuantiles = trainData['HouseholdIncome'].quantile([0.25, 0.5, 0.75])
+print(f"\nHousehold Income Quantiles:\n{incomeQuantiles}")
+
+trainData['IncomeGroup'] = pd.cut(
+    trainData['HouseholdIncome'],
+    bins=[0, incomeQuantiles[0.25], incomeQuantiles[0.5], incomeQuantiles[0.75], trainData['HouseholdIncome'].max()],
+    labels=['Low', 'Medium', 'High', 'Very High'],
+    include_lowest=True
+)
+
+creditHistoryInfo = trainData.groupby(['Education', 'IncomeGroup'])['Credit_History'].value_counts(normalize=True).unstack(fill_value=0)
+print(f"\nLikelihood of Credit History by Education and Income Group:\n{creditHistoryInfo}")
+
+def CredithistoryChance(row):
+    if pd.isnull(row['Credit_History']):
+        education = row['Education']
+        incomeGroup = row['IncomeGroup']
+        if (education, incomeGroup) in creditHistoryInfo.index:
+            likelihoods = creditHistoryInfo.loc[(education, incomeGroup)]
+            return 1.0 if likelihoods[1.0] > likelihoods[0.0] else 0.0
+    else:
+        return row['Credit_History']
+
+
+trainData['Credit_History'] = trainData.apply(CredithistoryChance, axis=1)
+trainData.drop(columns=['IncomeGroup'], inplace=True)
+updatedCreditHistoryCount = trainData['Credit_History'].value_counts()
+print(f"\nUpdated Distribution of 'Credit_History':\n{updatedCreditHistoryCount}")
+
+missingCreditHistory = trainData['Credit_History'].isnull().sum()
+print(f"\nMissing values in 'Credit_History': {missingCreditHistory}")
+
+
+############################# PROPERTY AREA CLEANING
+print("\n/////////////////")
+print("Property Area Cleaning")
+
+missingPropertyArea = trainData['Property_Area'].isnull().sum()
+print(f"\nMissing values in 'Property Area': {missingPropertyArea}")
+
+AreaValues = trainData['Property_Area'].unique()
+print(f"\nUnique values in 'Property Area' column: {AreaValues}")
+
+areaLoanStats = trainData.groupby('Property_Area')['LoanAmount'].describe()
+print("\nLoan Amount Values:")
+print(areaLoanStats)
+
 
 
 
